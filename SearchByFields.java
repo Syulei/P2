@@ -68,31 +68,94 @@ public class SearchByFields {
 //    }
 
 
-    public ResultSet searchFields(String author, String title, String year, String type, String sort, boolean out_ID,
-                             boolean out_author, boolean out_title, boolean out_year, boolean out_type, boolean summary, Connection conn) throws SQLException {
-        // 动态构建需要选择的列
-        StringBuilder fields = new StringBuilder();
-        if (out_ID) fields.append("publicationID, ");
-        if (out_author) fields.append("a.author, ");
-        if (out_title) fields.append("title, ");
-        if (out_year) fields.append("year, ");
-        if (out_type) fields.append("type, ");
-        if (summary) fields.append("summary, ");
-        if (fields.length() > 0) fields.delete(fields.length() - 2, fields.length());  // 删除最后的逗号和空格
+//    public ResultSet searchFields(String author, String title, String year, String type, String sort, boolean out_ID,
+//                             boolean out_author, boolean out_title, boolean out_year, boolean out_type, boolean summary, Connection conn) throws SQLException {
+//        // 动态构建需要选择的列
+//        StringBuilder fields = new StringBuilder();
+//        if (out_ID) fields.append("publicationID, ");
+//        if (out_author) fields.append("a.author, ");
+//        if (out_title) fields.append("title, ");
+//        if (out_year) fields.append("year, ");
+//        if (out_type) fields.append("type, ");
+//        if (summary) fields.append("summary, ");
+//        if (fields.length() > 0) fields.delete(fields.length() - 2, fields.length());  // 删除最后的逗号和空格
+//
+//        // 构建查询语句
+//        String getByFields = "SELECT " + fields.toString() + " FROM Publications p JOIN Authors a ON p.publicationID = a.publicationID " +
+//                "WHERE a.author LIKE ? OR title LIKE ? OR year LIKE ? OR type LIKE ? " +
+//                (sort.isEmpty() ? "" : "ORDER BY " + sort);  // 注意: 这可能引入SQL注入风险
+//
+//        ResultSet res;
+//        try (PreparedStatement queryFields = conn.prepareStatement(getByFields)) {
+//            queryFields.setString(1, "%" + (author == null ? "" : author) + "%");
+//            queryFields.setString(2, "%" + (title == null ? "" : title) + "%");
+//            queryFields.setString(3, "%" + (year == null ? "" : year) + "%");
+//            queryFields.setString(4, "%" + (type == null ? "" : type) + "%");
+//
+//            res = queryFields.executeQuery();
+////            while (res.next()) {
+////                for (int i = 1; i <= res.getMetaData().getColumnCount(); i++) {
+////                    System.out.print(res.getString(i) + " ");
+////                }
+////                System.out.println();  // 打印每行结果
+////            }
+//
+//        }
+//        return res;
+//    }
 
-        // 构建查询语句
-        String getByFields = "SELECT " + fields.toString() + " FROM Publications p JOIN Authors a ON p.publicationID = a.publicationID " +
-                "WHERE a.author LIKE ? OR title LIKE ? OR year LIKE ? OR type LIKE ? " +
-                (sort.isEmpty() ? "" : "ORDER BY " + sort);  // 注意: 这可能引入SQL注入风险
+    public ResultSet searchFields(String author, String title, String year, String type, String sort,
+                             boolean out_ID, boolean out_author, boolean out_title,
+                             boolean out_year, boolean out_type, boolean summary, Connection conn) throws SQLException {
+        StringBuilder selectClause = new StringBuilder("SELECT ");
+        if (out_ID) selectClause.append("p.publicationID, ");
+        if (out_author) selectClause.append("a.author, ");
+        if (out_title) selectClause.append("p.title, ");
+        if (out_year) selectClause.append("p.year, ");
+        if (out_type) selectClause.append("p.type, ");
+        if (summary) selectClause.append("p.summary, ");
 
-        ResultSet res;
-        try (PreparedStatement queryFields = conn.prepareStatement(getByFields)) {
-            queryFields.setString(1, "%" + (author == null ? "" : author) + "%");
-            queryFields.setString(2, "%" + (title == null ? "" : title) + "%");
-            queryFields.setString(3, "%" + (year == null ? "" : year) + "%");
-            queryFields.setString(4, "%" + (type == null ? "" : type) + "%");
+        // 移除末尾的逗号和空格
+        if (selectClause.length() > 7) {
+            selectClause.setLength(selectClause.length() - 2);
+        }
 
-            res = queryFields.executeQuery();
+        StringBuilder whereClause = new StringBuilder(" FROM Publications p JOIN Authors a ON p.publicationID = a.publicationID WHERE ");
+        boolean first = true;
+
+        // 动态构建 WHERE 子句
+        if (author != null) {
+            if (!first) whereClause.append(" AND ");
+            whereClause.append("a.author LIKE ?");
+            first = false;
+        }
+        if (title != null) {
+            if (!first) whereClause.append(" AND ");
+            whereClause.append("p.title LIKE ?");
+            first = false;
+        }
+        if (year != null) {
+            if (!first) whereClause.append(" AND ");
+            whereClause.append("p.year LIKE ?");
+            first = false;
+        }
+        if (type != null) {
+            if (!first) whereClause.append(" AND ");
+            whereClause.append("p.type LIKE ?");
+            first = false;
+        }
+
+        String orderByClause = sort.isEmpty() ? "" : " ORDER BY " + sort;
+        String sql = selectClause.toString() + whereClause + orderByClause;
+
+        PreparedStatement queryFields = conn.prepareStatement(sql);
+        int index = 1;
+        if (author != null) queryFields.setString(index++, "%" + author + "%");
+        if (title != null) queryFields.setString(index++, "%" + title + "%");
+        if (year != null) queryFields.setString(index++, "%" + year + "%");
+        if (type != null) queryFields.setString(index++, "%" + type + "%");
+
+        ResultSet res = queryFields.executeQuery();
 //            while (res.next()) {
 //                for (int i = 1; i <= res.getMetaData().getColumnCount(); i++) {
 //                    System.out.print(res.getString(i) + " ");
@@ -100,8 +163,24 @@ public class SearchByFields {
 //                System.out.println();  // 打印每行结果
 //            }
 
-        }
         return res;
+//        try (PreparedStatement queryFields = conn.prepareStatement(sql)) {
+//            int index = 1;
+//            if (author != null) queryFields.setString(index++, "%" + author + "%");
+//            if (title != null) queryFields.setString(index++, "%" + title + "%");
+//            if (year != null) queryFields.setString(index++, "%" + year + "%");
+//            if (type != null) queryFields.setString(index++, "%" + type + "%");
+//
+//            ResultSet res = queryFields.executeQuery();
+////            while (res.next()) {
+////                for (int i = 1; i <= res.getMetaData().getColumnCount(); i++) {
+////                    System.out.print(res.getString(i) + " ");
+////                }
+////                System.out.println();  // 打印每行结果
+////            }
+//            return res;
+//        }
+
     }
 
 

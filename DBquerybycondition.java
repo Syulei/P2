@@ -17,12 +17,14 @@ public class DBquerybycondition extends JFrame {
     private JTextField searchType;
     private JTextField sortBy;
 
-    private JTextField publicationID ;
-    private JTextField outAuthor ;
-    private JTextField outTitle;
-    private JTextField outYear ;
-    private JTextField outType ;
-    private JTextField summary ;
+
+    // 将 JTextField 改为 JComboBox<String>
+    private JComboBox<String> publicationID;
+    private JComboBox<String> outAuthor;
+    private JComboBox<String> outTitle;
+    private JComboBox<String> outYear;
+    private JComboBox<String> outType;
+    private JComboBox<String> summary;
 
     private JTable table;
     private DefaultTableModel tableModel;
@@ -80,16 +82,21 @@ public class DBquerybycondition extends JFrame {
         String type = searchType.getText().trim();
         String sort = sortBy.getText().trim();
 
-        Boolean outP = publicationID.getText().trim().toLowerCase().equals("yes");
-        Boolean outA = outAuthor.getText().trim().toLowerCase().equals("yes");
-        Boolean outT = outTitle.getText().trim().toLowerCase().equals("yes");
-        Boolean outY = outYear.getText().trim().toLowerCase().equals("yes");
-        Boolean outTy = outType.getText().trim().toLowerCase().equals("yes");
-        Boolean outSu = summary.getText().trim().toLowerCase().equals("yes");
+
+        // 从JComboBox获取选项，并检查是否选择了"Yes"
+        Boolean outP = publicationID.getSelectedItem().equals("Yes");
+        Boolean outA = outAuthor.getSelectedItem().equals("Yes");
+        Boolean outT = outTitle.getSelectedItem().equals("Yes");
+        Boolean outY = outYear.getSelectedItem().equals("Yes");
+        Boolean outTy = outType.getSelectedItem().equals("Yes");
+        Boolean outSu = summary.getSelectedItem().equals("Yes");
 
         SearchByFields searchFields = new SearchByFields();
         ResultSet rs = searchFields.searchFields(author, title, year, type, sort, outP, outA, outT, outY, outTy, outSu,
         conn);
+        System.out.println(rs.getMetaData());
+        System.out.println("After return the resultset");
+
         fillTable(rs);
 
     }
@@ -120,12 +127,23 @@ public class DBquerybycondition extends JFrame {
 
     public JPanel getOutputPanel() {
         JPanel outputFieldsPanel = new JPanel(new GridLayout(6, 2));
-        publicationID = new JTextField();
-        outAuthor = new JTextField();
-        outTitle = new JTextField();
-        outYear = new JTextField();
-        outType = new JTextField();
-        summary = new JTextField();
+
+        // 将 JTextField 替换为 JComboBox
+
+        publicationID = new JComboBox<>(new String[]{"Yes", "No"});
+        outAuthor = new JComboBox<>(new String[]{"Yes", "No"});
+        outTitle = new JComboBox<>(new String[]{"Yes", "No"});
+        outYear = new JComboBox<>(new String[]{"Yes", "No"});
+        outType = new JComboBox<>(new String[]{"Yes", "No"});
+        summary = new JComboBox<>(new String[]{"Yes", "No"});
+
+        // 设置默认选择为 "No"
+        publicationID.setSelectedIndex(0);
+        outAuthor.setSelectedIndex(1);
+        outTitle.setSelectedIndex(1);
+        outYear.setSelectedIndex(1);
+        outType.setSelectedIndex(1);
+        summary.setSelectedIndex(1);
 
         outputFieldsPanel.add(new JLabel("PublicationID(Yes/No):"));
         outputFieldsPanel.add(publicationID);
